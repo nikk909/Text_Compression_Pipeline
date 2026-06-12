@@ -143,6 +143,17 @@ for term,doc_ids in inverted_index.items():
 #   291, 36, 280, 570, 57, 49, 12, 62]
 #看着是没问题
 
+#6.VByte（Variable Byte） compression压缩
+
+compressed_index = {}
+
+def encode_vbyte(n : int) ->bytes:
+    result = []
+    while n>= 128:
+        result.append(n & 127 | 128)
+        n >>= 7
+    result.append(n)
+    return bytes(result)
 
 
 
