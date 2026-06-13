@@ -155,5 +155,18 @@ def encode_vbyte(n : int) ->bytes:
     result.append(n)
     return bytes(result)
 
+for term,gaps in gaps_index.items():
+    #b"" 返回bytes对象
+    buf = b""
+    for g in gaps:
+        #对于byetes 加法表示拼接
+        buf += encode_vbyte(g)
+        #gap 0   →  [0x00]
+        #gap 281 →  [0x99, 0x02]
+        #gap 297 →  [0x89, 0x02]
+    compressed_index[term] = buf
+
+
+    
 
 
