@@ -144,27 +144,107 @@ for term,doc_ids in inverted_index.items():
 #看着是没问题
 
 #6.VByte（Variable Byte） compression压缩
-
+#这里与md中略有出入，约定最高位为1表示继续，0表示结束
 compressed_index = {}
 
 def encode_vbyte(n : int) ->bytes:
     result = []
+    #128 也就是 1000|0000 
     while n>= 128:
+        #n & 127 表示n和127（01111111）按位与，也就是保留后七位
+        #n | 128 表示n和128（10000000）按位或，也就是后七位不变，最高位补1
+        #0|1 = 1 1|1 =1 所以最高位为1 0|1 = 1 0|0 = 0所以与按位或，保持不变
         result.append(n & 127 | 128)
+        #n >>= 7 表示将n右移7位，也就是去掉后七位，原本的变成后七位
         n >>= 7
     result.append(n)
     return bytes(result)
 
+#压缩的原理在于，一个int固定4个字节(32位)，最大可以表示2^32-1
+#现在可以让小一点的数字，用更少的字节表示
+#主要适配于小数，也就是2^28-1以下的数字，如果更大的话，
+#因为本来需要一位去表示是否结束，所以会让原本2^28-1 到2^32-1的数字存储五位反而变多
+#VByte 的优势不在「每个数都更小」，而在「小数字特别多时，平均更小」。
 for term,gaps in gaps_index.items():
     #b"" 返回bytes对象
     buf = b""
     for g in gaps:
         #对于byetes 加法表示拼接
         buf += encode_vbyte(g)
-        #gap 0   →  [0x00]
-        #gap 281 →  [0x99, 0x02]
-        #gap 297 →  [0x89, 0x02]
+        #gap 0   →  [0b00000000]原本32个0现在变成8位
+        #gap 281 →  [0b10001001 00000010]原本32位现在变成16位
+        #25+2*128 = 281
+        #gap 297 →  [0b10101001 00000010]原本32位现在变成16位
+        #32 + 9 + 2*128 = 297 低位在前高位在后
+        #根据首位是否为0来反编码
     compressed_index[term] = buf
+
+# print(compressed_index.get("pitch"))
+# b'\x00\x99\x02\xa9\x02|8\xec\x01\xe8\x01C\t,
+# \xa0\x02K\xd1\x05\x0f(\xa4\x06\x91\x01\x1a^\t
+# \x0b\xb3\x02\xfc\x03\xd1\x02jxL\x1f\x9d\x03\x95
+# \x0c\xb0\x01e\xb1\x01\xc4\x01-\xa0\x01!\xec\x01
+# \xe3\x04\xaf\x04g\xaf\x02\x1b\xa3\x02$\x98\x02\xba\x0491\x0c>'
+
+# gap 列表（用逗号分隔，给人看）:
+# [0] [281] [297] [124] [56] ... [44] [288] ...
+#   |    |     |     |    |         |    |
+#   v    v     v     v    v         v    v
+# bytes（无逗号，首尾相接）:
+# \x00 \x99\x02 \xa9\x02 \x7c 8 ... , \xa0\x02 ...
+#                               ↑
+#                          这是 gap=44，不是分隔符
+
+#7.Decode and Verify 反编码验证一下
+def decode_vbyte(buf : bytes) -> list[int]:
+    #乘法 power *= 128 改成左移 shift += 7，很多情况下稍快，逻辑不变
+    gaps = []
+    shift = 0
+    result = 0
+
+    for b in buf:
+        result += (b & 127) << shift
+
+        if b & 128 == 0:
+            gaps.append(result)
+            result = 0
+            shift = 0
+        else:
+            shift += 7
+
+    return gaps
+
+gaps_index_verify = {}
+for term,buf in compressed_index.items():
+    gaps_index_verify[term] = decode_vbyte(buf)
+
+# print(gaps_index_verify.get("pitch"))
+# [0, 281, 297, 124, 56, 236, 232, 67, 9, 44, 288, 75,
+#  721, 15, 40, 804, 145, 26, 94, 9, 11, 307, 508, 337,
+#   106, 120, 76, 31, 413, 1557, 176, 101, 177, 196, 45, 
+#   160, 33, 236, 611, 559, 103, 303, 27, 291, 36, 280, 570, 
+#   57, 49, 12, 62]
+reverse_index_verify = {}
+def gaps_to_doc_ids(gaps : list[int]) -> list[int]:
+    result = [gaps[0]]  
+    for gap in gaps[1:]:
+        result.append(result[-1] + gap)
+    return result
+
+for term,gaps in gaps_index_verify.items():
+    reverse_index_verify[term] = gaps_to_doc_ids(gaps)
+
+print(reverse_index_verify.get("pitch"))
+# [0, 281, 578, 702, 758, 994, 1226, 1293, 1302, 1346, 
+# 1634, 1709, 2430, 2445, 2485, 3289, 3434, 3460, 3554, 3563, 
+# 3574, 3881, 4389, 4726, 4832, 4952, 5028,5059, 5472, 7029, 
+# 7205, 7306, 7483, 7679, 7724, 7884, 7917, 8153, 8764, 9323, 
+# 9426, 9729, 9756, 10047, 10083, 10363, 10933, 10990, 11039, 
+# 11051, 11113]       
+
+
+
+        
 
 
     
