@@ -234,19 +234,41 @@ def gaps_to_doc_ids(gaps : list[int]) -> list[int]:
 for term,gaps in gaps_index_verify.items():
     reverse_index_verify[term] = gaps_to_doc_ids(gaps)
 
-print(reverse_index_verify.get("pitch"))
+#print(reverse_index_verify.get("pitch"))
 # [0, 281, 578, 702, 758, 994, 1226, 1293, 1302, 1346, 
 # 1634, 1709, 2430, 2445, 2485, 3289, 3434, 3460, 3554, 3563, 
 # 3574, 3881, 4389, 4726, 4832, 4952, 5028,5059, 5472, 7029, 
 # 7205, 7306, 7483, 7679, 7724, 7884, 7917, 8153, 8764, 9323, 
 # 9426, 9729, 9756, 10047, 10083, 10363, 10933, 10990, 11039, 
-# 11051, 11113]       
+# 11051, 11113]    
+   
 
+#8.build TF Table统计每个词在每篇文档里出现几次
+#TF Term Frequency（词频
+#tf[doc_id][term] = 次数
+#dict[str, list[int]]    这个词在哪些文档？inverted_index["cat"] = [0, 1, 2]   # 词 → 哪些 doc_id
+#dict[int, dict[str, int]]   这篇里这个词几次？tf[0]["cat"] = 2   # doc → 这个词出现几次
+tf:dict[int, dict[str, int]] = {}
+for doc_id,tokens in enumerate(text_preprocessed):
+    tf[doc_id] = {}
+    #对于每一个dog cat统计个数
+    for term in tokens:
+        #这个取法就是经典的有则+1 无则取0+1
+        tf[doc_id][term] = tf[doc_id].get(term,0) + 1
 
+# print(len(tf))
+# #11314
+# print(tf.get(0))
+# {'morgan': 1, 'guzman': 1, 'era': 1, 'run': 1, 'higher': 1, 
+# 'last': 1, 'year':1, 'cub': 1, 'idiot': 1, 'pitch': 1, 
+# 'harkey': 1, 'much': 1, 'hibbard': 1, 'castillo': 1, 'wo': 1, 
+# 'good': 1, 'think': 1, 'stud': 1, 'pitcher': 1}
 
-        
-
-
-    
-
+# print(tf.get(45))
+# {'I': 1, 'one': 2, 'complaint': 1, 'cameraman': 1, 'series': 1,
+#  'Show': 1, 'shot': 1, 'hit': 1, 'On': 1, 'occassion': 1, 
+#  'camera': 2, 'zoomed': 1, 'check': 1, 'along': 1, 'board': 1, 
+#  'puck': 1, 'slot': 1, 'They': 1, 'panned': 1, 'back':1, 'show': 1,
+#   'rebound': 1, 'Maybe': 1, 'Mom': 1, 'people': 1, 'little': 1,
+#    'experienced': 1}
 
