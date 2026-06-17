@@ -51,6 +51,8 @@ text_preprocessed:list[list[str]] = []
 for doc in text:
     #分词
     tokens = word_tokenize(doc)
+    #大小写统一：避免 "The" 去不掉停用词、"Camera"/"camera" 被当成两个词
+    tokens = [t.lower() for t in tokens]
     #只保留字母，去掉标点和数字；去掉停用词;返回一个包含所有单词的列表
     tokens = [
         t for t in tokens 
@@ -272,3 +274,42 @@ for doc_id,tokens in enumerate(text_preprocessed):
 #   'rebound': 1, 'Maybe': 1, 'Mom': 1, 'people': 1, 'little': 1,
 #    'experienced': 1}
 
+#9.idf Inverse Document Frequency 
+# 对 DF 做「逆」变换 
+#还是基于inverted_index
+
+import math#要用log
+
+idf:dict[str,float] = {}
+# df_:dict[str,int] = {}
+
+N = len(text_preprocessed)#一共有多少篇文档
+
+for term,doc_ids in inverted_index.items():
+    df = len(doc_ids)#这个词在多少篇文档里出现过
+    # df_[term] = df
+    idf[term] = math.log(N/df)
+    #df document frequency,词频，越大说明在越多文档里出现过，
+    #说明这个词越常见，给的idf越小
+
+#这一行之前都是忘记去掉大小写了，现在才开始加上，之前的输出可能有问题
+# print(idf.get("the"))
+# #None 作为停用词被删掉了
+# print(idf.get("year"))
+# #2.0746800478060003
+# print(idf.get("camera"))
+# #5.22292231172979
+# 0.09531017980432493
+
+# top10_by_df = sorted(df_.items(),key = lambda x:x[1],reverse=True)
+# print(top10_by_df[:10])
+# [('would', 3298), ('one', 3246), ('like', 2539), ('know', 2405), 
+# ('get', 2333), ('time', 1972), ('also', 1944), ('think', 1923), 
+# ('could', 1831), ('people', 1824)]
+# print(top10_by_df[-10:])
+# [('spacesuit', 1), ('wallengren', 1), ('univel', 1), 
+# ('recntly', 1), ('wkshtree', 1), ('magzines', 1), 
+# ('weightless', 1), ('capping', 1), ('foregone', 1), 
+# ('brainstorm', 1)]
+
+#10.TF-IDF计算
