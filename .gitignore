@@ -2,5 +2,5 @@
 __pycache__/
 *.pyc
 .env
-file/task/*.png
+#file/task/*.png
 #或者是file/**/*.png
