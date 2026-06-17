@@ -313,3 +313,32 @@ for term,doc_ids in inverted_index.items():
 # ('brainstorm', 1)]
 
 #10.TF-IDF计算
+# tf[0] = {"cat": 1, "sat": 1}
+# tf[1] = {"cat": 1, "dog": 1}
+# idf["cat"] = 0.41
+# idf["dog"] = 0.41
+# idf["sat"] = 0.41
+
+# tfidf_vectors[0]["cat"] = 1 * 0.41 = 0.41
+# tfidf_vectors[0]["sat"] = 1 * 0.41 = 0.41
+# tfidf_vectors[1]["cat"] = 1 * 0.41 = 0.41
+# tfidf_vectors[1]["dog"] = 1 * 0.41 = 0.41
+
+tf_idf:dict[int,dict[str,float]] = {}
+
+for doc_id,term_counts in tf.items():
+    tf_idf[doc_id] = {}
+    for term,count in term_counts.items():
+        tf_idf[doc_id][term] = count * idf[term]
+
+# print(tf_idf.get(0))
+# {'morgan': 6.768846818441564, 'guzman': 7.947501814783211, 
+# 'era': 5.382552457321673, 'run': 2.789884330338309, 
+# 'higher': 4.025528478501896, 'last':2.515965604448951, 
+# 'year': 2.0746800478060003, 'cub': 5.696210016176716, 
+# 'idiot': 5.382552457321673, 'pitch': 5.401970543178775,
+#  'harkey': 8.640648995343156, 'much': 2.051034996297508, 
+#  'hibbard': 8.640648995343156, 'castillo': 8.640648995343156,
+#   'wo': 3.357445266605167, 'good': 1.966719116022089,
+#    'think': 1.7721544303143213, 'stud': 7.542036706675046,
+#     'pitcher': 5.273353165356681}
