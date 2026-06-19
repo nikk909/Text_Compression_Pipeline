@@ -342,3 +342,11 @@ for doc_id,term_counts in tf.items():
 #   'wo': 3.357445266605167, 'good': 1.966719116022089,
 #    'think': 1.7721544303143213, 'stud': 7.542036706675046,
 #     'pitcher': 5.273353165356681}
+
+#11.Compare Cosine Similarity 比较余弦相似度
+#首先是query的预处理，类似于step2,变成处理好的token
+
+query = "cat dog"
+
+def query_preprocess(query:str) -> list[str]:
+    
