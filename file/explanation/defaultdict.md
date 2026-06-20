@@ -1,5 +1,3 @@
-# `from collections import defaultdict` 是什么
-
 `from collections import defaultdict` 是从 Python **标准库** 里导入 **`defaultdict`**：一种 **带默认值的字典**。
 
 ---

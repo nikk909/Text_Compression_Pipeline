@@ -1,4 +1,4 @@
-# Step 9：Compute IDF
+## Step 9：Compute IDF
 
 给每个词一个权重——越常见的词权重越低。
 

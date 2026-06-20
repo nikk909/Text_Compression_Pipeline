@@ -1,4 +1,4 @@
-# Build the Retrieval Index
+## Build the Retrieval Index
 
 1. **Load Dataset**
    - Example: Use sklearn's 20 Newsgroups fetch_20newsgroups()
@@ -14,7 +14,7 @@
 
 ---
 
-# Compress the Index
+## Compress the Index
 
 5. **Apply Gap Encoding**
    - Example: [3, 10, 15, 21] -> [3, 7, 5, 6]
@@ -27,7 +27,7 @@
 
 ---
 
-# Implement Ranked Retrieval
+## Implement Ranked Retrieval
 
 8. **Build TF Table**
    - Example: tf(doc1, t1) = 2, tf(science, d2) = 1
@@ -46,7 +46,7 @@
 
 ---
 
-# Speed up Retrieval
+## Speed up Retrieval
 
 13. **Candidate Selection**
     - Example: Only score docs that contain at least one query term
@@ -59,7 +59,7 @@
 
 ---
 
-# Evaluate and Reflect
+## Evaluate and Reflect
 
 16. **Measure Compression**
     - Example: original = 4000 bytes, compressed = 1200 bytes, ratio = 3.33x
