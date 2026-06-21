@@ -48,20 +48,23 @@ _STEMMER_WORD = WordNetLemmatizer()
 
 text_preprocessed:list[list[str]] = []
 
-for doc in text:
+#因为后面还有一个查询也得预处理所以单独写一个函数
+def preprocess_tokens(orgin_text:str) -> list[str]:
     #分词
-    tokens = word_tokenize(doc)
+    tokens = word_tokenize(orgin_text)
     #大小写统一：避免 "The" 去不掉停用词、"Camera"/"camera" 被当成两个词
     tokens = [t.lower() for t in tokens]
-    #只保留字母，去掉标点和数字；去掉停用词;返回一个包含所有单词的列表
+     #只保留字母，去掉标点和数字；去掉停用词;返回一个包含所有单词的列表
     tokens = [
         t for t in tokens 
         if t.isalpha() 
-        and t not in _STOP_WORD
-    ]
+        and t not in _STOP_WORD]
     #stemming词干提取，把每一个单词变成词干
     tokens = [_STEMMER_WORD.lemmatize(t) for t in tokens]
-    #将处理后的单词列表添加到text_preprocessed列表中
+    return tokens
+
+for doc in text:
+    tokens = preprocess_tokens(doc)
     text_preprocessed.append(tokens)
 
 # print(len(text_preprocessed))
@@ -346,7 +349,125 @@ for doc_id,term_counts in tf.items():
 #11.Compare Cosine Similarity 比较余弦相似度
 #首先是query的预处理，类似于step2,变成处理好的token
 
-query = "cat dog"
+query = "I would like to know the camera"
 
-def query_preprocess(query:str) -> list[str]:
+#使用了之前的函数
+query_tokens = preprocess_tokens(query)
+#print(query_tokens)
+#['would', 'like', 'know', 'camera']
+
+query_tf:dict[str,int] = {}
+for term in query_tokens:
+    query_tf[term] = query_tf.get(term,0) + 1
+#print(query_tf)
+#{'would': 1, 'like': 1, 'know': 1, 'camera': 1}
+
+#query用的是之前的算好的idf
+query_tf_idf:dict[str,float] = {}
+for term in query_tokens:
+    query_tf_idf[term] = query_tf[term] * idf[term]
+#print(query_tf_idf)
+#{'would': 1.2327246727835568, 'like': 1.4942705941984227, 
+# 'know': 1.5484909933632394, 'camera': 5.22292231172979}
+#可以看出camera比较高
+
+#cos公式，向量相乘除以模长的乘积，模长就是平方根求和
+def cosine_similarity(vec1:dict[str,float],vec2:dict[str,float],norm1:float) -> float:
+    #点积：只算两边都有的词
+    dot = sum(
+        vec1[term] * vec2[term]
+        for term in vec1
+        if term in vec2
+    )
+    
+    #如果点积为0，说明query没有在目前文档里出现，相似度为0
+    if dot == 0:
+        return 0.0
+
+    #模长
+    norm2 = math.sqrt(
+        sum(
+            v * v 
+            for v in vec2.values()
+        )
+    )
+    return dot / (norm1 * norm2)
+
+#query的模长是固定的所以放在外面
+
+norm1 = math.sqrt(
+    sum(
+        v * v 
+        for v in query_tf_idf.values()
+    )
+)
+
+#对每一篇文档计算相似度
+similarity_scores:dict[int,float] = {}
+
+for doc_id,term_counts in tf_idf.items():
+    similarity_scores[doc_id] = cosine_similarity(
+        query_tf_idf,term_counts,norm1
+    )
+
+# top5 = sorted(
+#     similarity_scores.items(),
+#     key = lambda x:x[1],
+#     reverse = True
+# )[:5]
+
+# print(top5)
+#[(5680, 0.5900908696454521), (3877, 0.4685661128188436), 
+# (45, 0.3486829251598637),(9657, 0.3176439454642293), (571, 0.29759431367586026)]
+
+# for doc_id,similarity in top5:
+#     print(doc_id,":",text[doc_id])
+#     5680 : 
+# No answer.
+
+
+# I do not feel like the cameras were out of range.  Cameras watched the first 
+# confrontation.  Cameras watched the banners.  Cmaeras watched the final 
+# confrontation with tanks.  Cameras watched the fire.  When weren't cameras 
+# able to watch?  When would cameras be unable to watch people coming out with 
+# their hands up?
+
+
+# Well, that is what BATF should have done.  Either, Koresh would have gone
+# peaceably as he has done in the past, or perhaps it was already too close
+# to the apocalypse in his own mind.  It is hard to predict the actions of
+# a leader who would not release the children when most rational people would.       
+
+# Now will you answer my question up top?
+
+
+
+# 3877 : I agree. I own one. Aside from the shutter, it is built like
+# a little tank. A very good camera. Your price sounds reasonable,
+# too. New, I paid $565 for my KIEV 88 Camera Kit. Good luck.
+# 45 :
+
+
+# I have one complaint for the cameramen doing the Jersey-Pitt series:  Show
+# the shots, not the hits.  On more than one occassion the camera zoomed in
+# on a check along the boards while the puck was in the slot.  They panned
+# back to show the rebound.  Maybe Mom's camera people were a little more
+# experienced.
+
+
+# 9657 : I am looking for a working docking deck (deck that goes on back of
+# camera) for an old JVC GX-S700 Tube video camera.  Any format is
+# acceptable.  Please send me a message if you even know anything about decks        
+# for the GX-S700.  Also interested in any video equipment for sale,
+# professional or consumer.  Thank you.
+
+# ----
+# bbates@pro-freedom.van.wa.us   -==-   Pro-Freedom BBS - (206) 694-3276
+# 571 : Dumb move.
+
+#         The smart move would be to sneak in someone with a TV camera
+# and video transmitter.
+
+
+
     
