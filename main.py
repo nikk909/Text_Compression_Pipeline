@@ -468,6 +468,23 @@ for doc_id,term_counts in tf_idf.items():
 #         The smart move would be to sneak in someone with a TV camera
 # and video transmitter.
 
+#Step 13：Candidate Selection候选筛选
+#step 14: Ignore Low IDF Terms忽略低IDF词
+#step 15: Champion Lists or Tiered Index 冠军列表或分级索引
 
+
+
+# 慢：for 每一篇 in 全库:
+#         算相似度（很多篇点积=0，早 return）
+# 快：先用 inverted_index 得到 candidate_docs
+#     for 每一篇 in candidate_docs:
+#         算相似度
+#     排序取 top5
+
+canidate_docs:set[int] = set()
+idf_threshold = 1.0
+
+for term in query_tf_df:
+    if term not in 
 
     
