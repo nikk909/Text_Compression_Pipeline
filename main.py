@@ -468,7 +468,7 @@ for doc_id,term_counts in tf_idf.items():
 #         The smart move would be to sneak in someone with a TV camera
 # and video transmitter.
 
-#Step 13：Candidate Selection候选筛选
+#Step 13：Candidate Selection候选筛选,只给含至少一个查询词的文档打分
 #step 14: Ignore Low IDF Terms忽略低IDF词
 #step 15: Champion Lists or Tiered Index 冠军列表或分级索引
 
@@ -484,7 +484,29 @@ for doc_id,term_counts in tf_idf.items():
 canidate_docs:set[int] = set()
 idf_threshold = 1.0
 
-for term in query_tf_df:
-    if term not in 
+for term in query_tf_idf:
+    #在 Python 里，对字典写：
+
+    # if term in inverted_index:
+    # #    等价于：
+    # # if term in inverted_index.keys():
+    if term in inverted_index:#如果在当前字典库里
+        for doc_id in inverted_index[term] and idf[term] >= idf_threshold:
+            canidate_docs.add(doc_id)
+            #不用if else因为本来就是空的
+
+print(len(canidate_docs))
+#5538 相比于原来的11314 速度提升了50%
+
+#重新计算
+for doc_id in canidate_docs:
+    similarity_scores[doc_id] = cosine_similarity(
+        query_tf_idf,tf_idf[doc_id],norm1
+    )
+
+# Step 12：排序取 top5（和之前一样）#step 12:
+
+
+
 
     
