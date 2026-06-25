@@ -504,9 +504,8 @@ for doc_id in canidate_docs:
         query_tf_idf,tf_idf[doc_id],norm1
     )
 
-# Step 12：排序取 top5（和之前一样）#step 12:
+# Step 15：Champion Lists  冠军队列
+champion_lists: dict[str, list[int]] = {}
 
-
-
-
-    
+for term in inverted_index:
+    print(term)
