@@ -473,7 +473,7 @@ for doc_id,term_counts in tf_idf.items():
 #step 15: Champion Lists or Tiered Index 冠军列表或分级索引
 
 
-
+#先算出至少包含一个查询词的，并且过滤低IDF
 # 慢：for 每一篇 in 全库:
 #         算相似度（很多篇点积=0，早 return）
 # 快：先用 inverted_index 得到 candidate_docs
@@ -481,7 +481,7 @@ for doc_id,term_counts in tf_idf.items():
 #         算相似度
 #     排序取 top5
 
-canidate_docs:set[int] = set()
+canidate_docs:dict[str,list[int]] = dict()
 idf_threshold = 1.0
 
 for term in query_tf_idf:
@@ -492,11 +492,27 @@ for term in query_tf_idf:
     # # if term in inverted_index.keys():
     if term in inverted_index:#如果在当前字典库里
         for doc_id in inverted_index[term] and idf[term] >= idf_threshold:
-            canidate_docs.add(doc_id)
+            canidate_docs[term].add(doc_id)
             #不用if else因为本来就是空的
 
 print(len(canidate_docs))
 #5538 相比于原来的11314 速度提升了50%
+
+# 之后在这个候选集的基础上，计算打分，
+# 根据打分的排序确定Step 15：Champion Lists  冠军队列 
+#查的时候直接去冠军队列里查
+champion_lists:dict[str,list[int]] = {}
+n_champions:int = 50
+
+for term in inverted_index:
+    scored:dict[int,float] = {}
+    for doc_id in inverted_index[term]:
+        term_tf_idf = tf_idf[doc_id].get(term,0)
+        if term_tf_idf > 0:
+            scored.append(doc_id,term_tf_idf)
+    top_k = sorted(scored.items(),key = lambda x:x[1],reverse = True)[:n_champions]
+    champion_lists[term] = [doc_id for doc_id,score in top_k]#只取前n个
+    #可以理解为每个词的冠军队列 
 
 #重新计算
 for doc_id in canidate_docs:
@@ -504,8 +520,15 @@ for doc_id in canidate_docs:
         query_tf_idf,tf_idf[doc_id],norm1
     )
 
-# Step 15：Champion Lists  冠军队列
-champion_lists: dict[str, list[int]] = {}
 
-for term in inverted_index:
-    print(term)
+
+
+
+    
+
+
+
+
+
+
+    
