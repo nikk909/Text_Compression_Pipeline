@@ -481,7 +481,8 @@ for doc_id,term_counts in tf_idf.items():
 #         算相似度
 #     排序取 top5
 
-canidate_docs:dict[str,list[int]] = dict()
+#使用set去重
+canidate_doc_ids:set[int] = set()
 idf_threshold = 1.0
 
 for term in query_tf_idf:
@@ -490,20 +491,13 @@ for term in query_tf_idf:
     # if term in inverted_index:
     # #    等价于：
     # # if term in inverted_index.keys():
-    if term in inverted_index:#如果在当前字典库里
-        for doc_id in inverted_index[term] and idf[term] >= idf_threshold:
-            canidate_docs[term].add(doc_id)
-            #不用if else因为本来就是空的
+     if term in inverted_index and idf[term] >= idf_threshold:
+        for doc_id in inverted_index[term]:
+            canidate_doc_ids.add(doc_id)
+                #不用if else因为本来就是空的
 
-print(len(canidate_docs))
+print(len(canidate_doc_ids))
 #5538 相比于原来的11314 速度提升了50%
-
-# 之后在这个候选集的基础上，计算打分，
-# 根据打分的排序确定Step 15：Champion Lists  冠军队列 
-#查的时候直接去冠军队列里查
-champion_lists:dict[str,list[int]] = {}
-n_champions:int = 50
-
 for term in inverted_index:
     scored:dict[int,float] = {}
     for doc_id in inverted_index[term]:
