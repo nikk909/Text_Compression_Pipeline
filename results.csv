@@ -1,0 +1,4 @@
+run_timestamp:datetime,test_iterations_number:int,query_word_count:int,full_retrieval_average_time_seconds:float,optimized_retrieval_average_time_seconds:float,speedup_ratio:float
+2026-07-01 23:49:04,20,4,0.0151,0.0005,29.36
+2026-07-01 23:53:43,20,4,0.0191,0.0006,32.87
+2026-07-01 23:56:12,50,6,0.0274,0.0011,24.61

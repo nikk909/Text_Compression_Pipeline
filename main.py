@@ -405,9 +405,9 @@ norm1 = math.sqrt(
 #对每一篇文档计算相似度
 similarity_scores:dict[int,float] = {}
 
-for doc_id,term_counts in tf_idf.items():
+for doc_id,tf_idf_vector in tf_idf.items():
     similarity_scores[doc_id] = cosine_similarity(
-        query_tf_idf,term_counts,norm1
+        query_tf_idf,tf_idf_vector,norm1
     )
 
 # top5 = sorted(
@@ -534,6 +534,7 @@ top5 = sorted(
     key = lambda x:x[1],
     reverse = True
 )[:5]
+#排序结果是list[tuple[int,float]]
 
 # print(top5)
 # [(5680, 0.5900908696454521), (3877, 0.4685661128188436), 
@@ -550,7 +551,7 @@ import time #计时
 vocab = list(inverted_index.keys())
 #字典取出所有词，组成列表["morgan", "guzman", "camera", "hockey", ...]（约 7 万多个）
 
-def random_query(query_number:int = 1,word_number:int = 4) -> str:
+def random_query(query_number:int = 1,word_number:int = 4) -> list[str]:
     query:list[str] = []
     for i in range(query_number):
         words = random.sample(vocab,word_number)
@@ -573,6 +574,149 @@ def random_query(query_number:int = 1,word_number:int = 4) -> str:
 # ['independent mgg futurenet talisman jur demostration']
 # ['lateral wannabe twentieth unto pounce perihelion']
 # ['somali reject hhrbe cradled splitfire linearity']
+
+#返回query对应的tf_idf数组和norm1便于后续计算
+def build_query_tf_idf(query:str) -> [dict[str,float],float]:
+    query_tokens = preprocess_tokens(query)
+    query_tf:dict[str,int] = {}
+    for term in query_tokens:
+        query_tf[term] = query_tf.get(term,0) + 1
+
+    query_tf_idf:dict[str,float] = {}
+    for term,count in query_tf.items():
+        query_tf_idf[term] = count * idf[term]
+
+    norm1 = math.sqrt(
+        sum(
+            v*v for v in query_tf_idf.values()
+        )
+    )
+
+    return query_tf_idf,norm1
+
+def search_full(query_tf_idf:dict[str,float],norm1:float) -> dict[int,float]:
+    #优化前全局打分
+    similarity_scores:dict[int,float] = {}
+
+    for doc_id,tf_idf_vector in tf_idf.items():
+        similarity_scores[doc_id] = cosine_similarity(
+            query_tf_idf,tf_idf_vector,norm1
+        )
+    
+    return similarity_scores
+
+def search_candidate_champion_high_idf(
+    query_tf_idf:dict[str,float],
+    norm1:float,
+    idf_threshold:float = 1.0
+) -> dict[int,float]:
+    #优化后候选打分
+    similarity_scores:dict[int,float] = {}
+
+    canidate_doc_ids:set[int] = set()
+    
+    for term in query_tf_idf:
+    #在 Python 里，对字典写：
+
+    # if term in inverted_index:
+    # #    等价于：
+    # # if term in inverted_index.keys():
+        if term in champion_lists and idf[term] >= idf_threshold:
+            for doc_id in champion_lists[term]:
+                canidate_doc_ids.add(doc_id)
+                    #不用if else因为本来就是空的
+
+    
+    for doc_id in canidate_doc_ids:
+                similarity_scores[doc_id] = cosine_similarity(
+                    query_tf_idf,tf_idf[doc_id],norm1)
+    
+    return similarity_scores
+
+def sorted_final_results(similarity_scores:dict[int,float]) -> list[tuple[int,float]]:
+    return sorted(
+        similarity_scores.items(),
+        key = lambda x:x[1],
+        reverse = True)[:5]
+
+def measure_retrieval_time(
+    iteration_number:int = 20,
+    word_number:int = 4
+) -> [list[float],list[float]]:
+    full_time:list[float] = []
+    optimized_time:list[float] = []
+
+    for i in range(iteration_number):
+        query = random_query(1,word_number)
+        query_tf_idf,norm1 = build_query_tf_idf(query[0])
+
+        t0 = time.perf_counter()#	高精度计时（适合测代码耗时）
+        #time.perf_counter() 返回一个 浮点数（float），表示从某个固定起点到调用这一刻，经过了多少秒。
+        #单独看 t0 的数值（如 1847293.58）没意义，只有两次相减的差才有意义
+        search_full_results = search_full(query_tf_idf,norm1)
+        sorted_final_results(search_full_results)
+        #理论上结果可以返回使用但是目前没有需要计算的东西所以就只是先放在这里
+        full_time.append(time.perf_counter() - t0)
+
+        t1 = time.perf_counter()
+        search_candidate_champion_high_idf_results = search_candidate_champion_high_idf(query_tf_idf,norm1)
+        sorted_final_results(search_candidate_champion_high_idf_results)
+        optimized_time.append(time.perf_counter() - t1)
+
+    return full_time,optimized_time
+
+#结果格式
+#test_iterations,query_word_count,full_retrieval_average_time_seconds,
+# optimized_retrieval_average_time_seconds,speedup_ratio
+
+from datetime import datetime
+import os
+
+def test_and_save_results_to_csv(
+    filepath:str,
+    iteration_number:int,
+    word_number:int,
+) -> None:
+    header = (
+    "run_timestamp:datetime,test_iterations_number:int,query_word_count:int,"
+    "full_retrieval_average_time_seconds:float,optimized_retrieval_average_time_seconds:float,"
+    "speedup_ratio:float\n"
+    )#中间没有逗号，元组里拼接的字符串会自动连在一起
+    run_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # 例如: 2026-06-23 15:42:08
+    full_time,optimized_time = measure_retrieval_time(iteration_number,word_number)
+    average_full_time = sum(full_time) / iteration_number
+    average_optimized_time = sum(optimized_time) / iteration_number
+    speedup_ratio = average_full_time / average_optimized_time
+
+    line = (
+        f"{run_timestamp},{iteration_number},{word_number},"
+        f"{average_full_time:.4f},{average_optimized_time:.4f},{speedup_ratio:.2f}\n"
+    )
+
+    #这个写法蛮神奇的，判断前置成一个变量了，而且还有= 判断条件的
+    file_exists = os.path.exists(filepath)
+    file_empty = file_exists and os.path.getsize(filepath) == 0
+    #这个代码的含义是如果存在就打开追加，如果不存在就python自动新建
+    with open(filepath,'a',encoding='utf-8') as f:
+        if not file_exists or file_empty:
+            f.write(header)
+        f.write(line)
+        print(f"Saved results to {filepath}") 
+    
+filepath = "results.csv"
+iteration_number = 50
+word_number = 6
+test_and_save_results_to_csv(filepath,iteration_number,word_number)
+
+
+
+    
+
+
+    
+
+    
 
 
 
