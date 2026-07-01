@@ -487,7 +487,13 @@ for term in inverted_index:
     top_k = sorted(scored.items(),key = lambda x:x[1],reverse = True)[:n_champions]
     champion_lists[term] = [doc_id for doc_id,score in top_k]#只取前n个
     #可以理解为每个词的冠军队列 
-print(champion_lists.get("camera"))
+# print(champion_lists.get("camera"))
+# [5680, 10947, 1146, 1502, 6954, 9778, 1943, 2170, 5636, 9125, 45, 538, 
+# 1095, 1207, 3657, 3877, 8130, 8376, 9657, 126, 213, 313, 571, 924, 
+# 1107, 1335, 2137, 2761, 3099, 3370, 3412, 3583, 3595, 4226, 4694, 
+# 5497, 5519, 5881, 6213, 6446, 6565, 6639, 6946, 7214, 7257, 7539, 
+# 7853, 7885, 8095, 8594, 9276, 9376, 9624, 10018, 10157, 10465, 
+# 10600, 10663, 10701, 10735, 10810]
 
 #13，14
 #先算出至少包含一个查询词的，并且过滤低IDF
@@ -508,14 +514,15 @@ for term in query_tf_idf:
     # if term in inverted_index:
     # #    等价于：
     # # if term in inverted_index.keys():
-     if term in inverted_index and idf[term] >= idf_threshold:
+    if term in champion_lists and idf[term] >= idf_threshold:
         for doc_id in champion_lists[term]:
             canidate_doc_ids.add(doc_id)
                 #不用if else因为本来就是空的
 
-print(len(canidate_doc_ids))
-#5538
+# print(len(canidate_doc_ids))
+#514对比之前5538减少了4194
 
+similarity_scores: dict[int, float] = {}
 #重新计算
 for doc_id in canidate_doc_ids:
     similarity_scores[doc_id] = cosine_similarity(
@@ -523,16 +530,54 @@ for doc_id in canidate_doc_ids:
     )
 
 top5 = sorted(
-    canidate_doc_ids.items(),
+    similarity_scores.items(),
     key = lambda x:x[1],
     reverse = True
 )[:5]
 
-print(top5)
+# print(top5)
+# [(5680, 0.5900908696454521), (3877, 0.4685661128188436), 
+# (45, 0.3486829251598637), (9657, 0.3176439454642293), 
+# (571, 0.29759431367586026)]
+
+#17.Measure Retrieval Time计算检索时间
+#后面是一些重复的代码，只不过封装成了函数然后方便计时
+
+#先生成随机生成查询的函数
+import random #随机
+import time #计时
+
+vocab = list(inverted_index.keys())
+#字典取出所有词，组成列表["morgan", "guzman", "camera", "hockey", ...]（约 7 万多个）
+
+def random_query(query_number:int = 1,word_number:int = 4) -> str:
+    query:list[str] = []
+    for i in range(query_number):
+        words = random.sample(vocab,word_number)
+        #random.sample(iterable, k) 从 iterable 中随机、不重复选择 k 个元素
+        #返回一个形如["camera", "hockey", "morgan", "guzman"]的列表
+        query.append(" ".join(words))
+        # words = ["hockey", "camera", "would"]
+        # " ".join(words)
+        # 结果：'hockey camera would'
+    return query
+
+# for i in range(3):
+#     print(random_query(1,6))
+    #默认
+#    ['alum cutter jarusalem netcomsv']
+#    ['cdp calle polytron lates']
+#    ['cud demonized sheik command']
+
+#改为6
+# ['independent mgg futurenet talisman jur demostration']
+# ['lateral wannabe twentieth unto pounce perihelion']
+# ['somali reject hhrbe cradled splitfire linearity']
 
 
 
 
+        
 
     
 
